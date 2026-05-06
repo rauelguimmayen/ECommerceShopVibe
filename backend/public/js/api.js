@@ -1,5 +1,15 @@
 // ─── ShopVibe API Client ──────────────────────────────────────────────────────
-const API_BASE = 'http://localhost:5000/api';
+// Dynamically resolve the API base URL so the same build works
+// locally (Express on :5000) AND on Render (same-origin /api).
+const API_BASE = (() => {
+  const { hostname, port, protocol } = window.location;
+  // Running on Render or any real deployment → same-origin /api
+  if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    return `${protocol}//${hostname}/api`;
+  }
+  // Local dev: frontend served by Express on :5000
+  return `${protocol}//${hostname}:${port || 5000}/api`;
+})();
 
 const api = {
   // ── helpers ──────────────────────────────────────────────────────────────────

@@ -1,210 +1,206 @@
-# 🛍️ ShopVibe
+# ShopVibe 🛍️
 
-A full-stack e-commerce application converted from React/Base44 to:
-
-- **Frontend:** HTML5 · Bootstrap 5 · Vanilla JavaScript
-- **Backend:** Node.js · Express.js · MongoDB (Mongoose)
+A full-stack e-commerce app built with **Bootstrap 5 + Vanilla JS** (frontend) and **Node.js + Express + MongoDB** (backend), deployable to **Render** in minutes.
 
 ---
 
-## 📁 Project Structure
+## Architecture
 
 ```
 shopvibe/
-├── backend/                   # Node.js + Express API
-│   ├── models/
-│   │   ├── User.js            # User schema (auth + roles)
-│   │   ├── Product.js         # Product schema
-│   │   ├── Order.js           # Order schema
-│   │   └── CartItem.js        # Cart item schema
-│   ├── routes/
-│   │   ├── auth.js            # POST /register, POST /login, GET /me
-│   │   ├── products.js        # CRUD products (admin) + public listing
-│   │   ├── orders.js          # Place & manage orders
-│   │   └── cart.js            # Cart CRUD (per-user)
-│   ├── middleware/
-│   │   └── auth.js            # JWT protect + adminOnly middleware
-│   ├── .env.example           # Environment variable template
-│   ├── package.json
-│   └── server.js              # Express app entry point
-│
-└── frontend/                  # Static HTML/CSS/JS
-    ├── index.html             # Home page
-    ├── components/
-    │   └── navbar.html        # Shared navbar + cart offcanvas
-    ├── css/
-    │   └── style.css          # Custom styles (brand colors, components)
-    ├── js/
-    │   ├── api.js             # Fetch-based API client
-    │   └── app.js             # Shared cart state, toast, auth guard
-    ├── pages/
-    │   ├── shop.html          # Product listing with filters
-    │   ├── product.html       # Product detail
-    │   ├── checkout.html      # 2-step checkout (shipping + payment)
-    │   ├── orders.html        # User order history
-    │   ├── login.html         # Login form
-    │   ├── register.html      # Registration form
-    │   └── admin/
-    │       ├── dashboard.html # Admin stats + recent orders
-    │       ├── products.html  # CRUD products table + modal
-    │       └── orders.html    # All orders with status management
-    └── package.json
+├── render.yaml              ← Render deployment blueprint
+├── .gitignore
+├── README.md
+└── backend/                 ← Root of the deployed service
+    ├── server.js            ← Express: serves API + static frontend
+    ├── seed.js              ← Populates DB with 12 products + admin user
+    ├── package.json
+    ├── .env.example
+    ├── middleware/
+    │   └── auth.js          ← JWT protect + adminOnly
+    ├── models/
+    │   ├── User.js
+    │   ├── Product.js
+    │   ├── Order.js
+    │   └── CartItem.js
+    ├── routes/
+    │   ├── auth.js
+    │   ├── products.js
+    │   ├── orders.js
+    │   └── cart.js
+    └── public/              ← Static frontend (served by Express)
+        ├── index.html       ← Home
+        ├── css/style.css
+        ├── js/
+        │   ├── api.js       ← Fetch wrapper (auto-detects localhost vs Render)
+        │   └── app.js       ← Cart state, toasts, navbar inject
+        ├── components/
+        │   └── navbar.html  ← Shared navbar (loaded via fetch)
+        └── pages/
+            ├── shop.html
+            ├── product.html
+            ├── checkout.html
+            ├── orders.html
+            ├── login.html
+            ├── register.html
+            ├── 404.html
+            └── admin/
+                ├── dashboard.html
+                ├── products.html
+                └── orders.html
 ```
+
+**Key design:** Express serves both the API (`/api/*`) and the entire frontend (`/public`) from the **same origin**. No CORS, no separate frontend server, one Render service.
 
 ---
 
-## 🚀 Quick Start
+## Deploy to Render
 
-### 1. Prerequisites
-- Node.js v18+
-- MongoDB (local or [MongoDB Atlas](https://www.mongodb.com/atlas))
+### Step 1 — MongoDB Atlas (free)
 
-### 2. Backend Setup
+1. Go to [cloud.mongodb.com](https://cloud.mongodb.com) → create a free **M0** cluster.
+2. Create a database user (username + password — no special chars in password).
+3. Under **Network Access** → Add IP Address → **Allow Access From Anywhere** (`0.0.0.0/0`).
+4. Click **Connect** → **Drivers** → copy the connection string:
+   ```
+   mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/shopvibe?retryWrites=true&w=majority
+   ```
+
+### Step 2 — Push to GitHub
+
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+git remote add origin https://github.com/YOUR_USERNAME/shopvibe.git
+git push -u origin main
+```
+
+### Step 3 — Create Render Web Service
+
+**Option A — Blueprint (auto)**
+1. In Render dashboard → **New** → **Blueprint**.
+2. Connect your GitHub repo — Render reads `render.yaml` automatically.
+3. In the environment variables panel, set `MONGO_URI` to the Atlas connection string from Step 1.
+4. Click **Apply** — deployment starts.
+
+**Option B — Manual**
+1. Render dashboard → **New** → **Web Service** → connect your repo.
+2. Set:
+   - **Root Directory**: `backend`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+   - **Node version**: 18+
+3. Add Environment Variables:
+   | Key | Value |
+   |-----|-------|
+   | `NODE_ENV` | `production` |
+   | `MONGO_URI` | *(your Atlas URI)* |
+   | `JWT_SECRET` | *(any long random string)* |
+   | `JWT_EXPIRES_IN` | `7d` |
+4. Click **Create Web Service**.
+
+### Step 4 — Seed the Database
+
+Once the service is live, open Render's **Shell** tab and run:
+
+```bash
+node seed.js
+```
+
+This creates 12 sample products and an admin account:
+- **Email**: `admin@shopvibe.com`
+- **Password**: `admin123`
+
+*(Change this password after first login via the database or add a change-password route.)*
+
+Your app is now live at `https://shopvibe.onrender.com` (or your custom domain).
+
+---
+
+## Run Locally
 
 ```bash
 cd backend
+
+# Install dependencies
 npm install
 
-# Copy and configure environment variables
+# Create your .env file
 cp .env.example .env
-# Edit .env — set MONGO_URI and JWT_SECRET
+# Edit .env — set MONGO_URI (local or Atlas) and JWT_SECRET
 
-npm run dev    # development (nodemon)
+# Seed sample data
+node seed.js
+
+# Start server (frontend + API on same port)
+npm run dev          # with nodemon (auto-reload)
 # or
-npm start      # production
+npm start            # plain node
 ```
 
-The API server starts on **http://localhost:5000**
-
-### 3. Frontend Setup
-
-```bash
-cd frontend
-npm install
-npm start      # serves on http://localhost:3000
-```
-
-Or simply open `frontend/index.html` with any static server (VS Code Live Server, nginx, etc.).
+Open **http://localhost:5000** — frontend and API are both served from port 5000.
 
 ---
 
-## 🔑 Environment Variables
+## Environment Variables
 
-| Variable | Description | Default |
-|---|---|---|
-| `PORT` | API server port | `5000` |
-| `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017/shopvibe` |
-| `JWT_SECRET` | Secret key for JWT signing | *(required — change this!)* |
-| `JWT_EXPIRES_IN` | JWT expiration time | `7d` |
-| `FRONTEND_URL` | CORS allowed origin | `http://localhost:3000` |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PORT` | No | Defaults to `5000` locally; Render sets this automatically |
+| `MONGO_URI` | **Yes** | MongoDB connection string |
+| `JWT_SECRET` | **Yes** | Secret key for signing JWTs (use a long random string) |
+| `JWT_EXPIRES_IN` | No | Token lifetime, default `7d` |
+| `NODE_ENV` | No | Set to `production` on Render |
 
 ---
 
-## 📡 API Endpoints
+## API Reference
 
 ### Auth
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| POST | `/api/auth/register` | Register new user | Public |
-| POST | `/api/auth/login` | Login, returns JWT | Public |
-| GET | `/api/auth/me` | Get current user | 🔒 JWT |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/auth/register` | — | Register new user |
+| POST | `/api/auth/login` | — | Login → JWT |
+| GET | `/api/auth/me` | Bearer | Current user |
 
 ### Products
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| GET | `/api/products` | List active products (`?category=&featured=&search=`) | Public |
-| GET | `/api/products/admin/all` | All products (including inactive) | 🔒 Admin |
-| GET | `/api/products/:id` | Get single product | Public |
-| POST | `/api/products` | Create product | 🔒 Admin |
-| PUT | `/api/products/:id` | Update product | 🔒 Admin |
-| DELETE | `/api/products/:id` | Delete product | 🔒 Admin |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/products` | — | List active products (`?category=&featured=&search=&sort=&limit=`) |
+| GET | `/api/products/admin/all` | Admin | All products incl. inactive |
+| GET | `/api/products/:id` | — | Single product |
+| POST | `/api/products` | Admin | Create product |
+| PUT | `/api/products/:id` | Admin | Update product |
+| DELETE | `/api/products/:id` | Admin | Delete product |
 
 ### Cart
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| GET | `/api/cart` | Get user's cart | 🔒 JWT |
-| POST | `/api/cart` | Add item (or increment qty) | 🔒 JWT |
-| PUT | `/api/cart/:id` | Update item quantity | 🔒 JWT |
-| DELETE | `/api/cart/:id` | Remove one item | 🔒 JWT |
-| DELETE | `/api/cart` | Clear entire cart | 🔒 JWT |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/cart` | Bearer | Get cart |
+| POST | `/api/cart` | Bearer | Add/increment item |
+| PUT | `/api/cart/:id` | Bearer | Update quantity |
+| DELETE | `/api/cart/:id` | Bearer | Remove item |
+| DELETE | `/api/cart` | Bearer | Clear cart |
 
 ### Orders
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| GET | `/api/orders/my` | Current user's orders | 🔒 JWT |
-| GET | `/api/orders` | All orders | 🔒 Admin |
-| GET | `/api/orders/stats/summary` | Revenue + count stats | 🔒 Admin |
-| POST | `/api/orders` | Place order | 🔒 JWT |
-| PUT | `/api/orders/:id/status` | Update order status | 🔒 Admin |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/orders/my` | Bearer | User's orders |
+| POST | `/api/orders` | Bearer | Place order |
+| GET | `/api/orders` | Admin | All orders |
+| PUT | `/api/orders/:id/status` | Admin | Update status |
+| GET | `/api/orders/stats/summary` | Admin | Revenue stats |
 
 ---
 
-## 👤 Creating an Admin User
+## Tech Stack
 
-After registering a user, update the role directly in MongoDB:
-
-```js
-// In MongoDB shell or Compass
-db.users.updateOne(
-  { email: "admin@example.com" },
-  { $set: { role: "admin" } }
-)
-```
-
-Or seed via a script using `mongoose`.
-
----
-
-## 🎨 Frontend Architecture
-
-### API Client (`js/api.js`)
-- Central `api` object with namespaced methods (`api.auth`, `api.products`, `api.cart`, `api.orders`)
-- JWT stored in `localStorage` and auto-attached to every request
-- User cached in `localStorage` for instant UI rendering
-
-### Shared App (`js/app.js`)
-- **`cart`** — global cart state object. Loads from backend on every page, syncs badge + slide-over
-- **`showToast(msg, type)`** — Bootstrap 5 toast notifications
-- **`buildProductCard(p)`** — reusable product card HTML builder
-- **`renderNavUser()`** — injects user dropdown or login/register links into navbar
-- **`requireAuth()` / `requireAdmin()`** — page-level auth guards
-
-### Navbar
-The navbar is in `components/navbar.html` and fetched + injected on every page via `fetch()`. This keeps it DRY without a build step.
-
----
-
-## 🔐 Security Notes
-
-- Passwords hashed with **bcryptjs** (12 salt rounds)
-- JWTs expire in 7 days by default
-- Admin routes protected by `protect` + `adminOnly` middleware
-- Cart items scoped to `req.user._id` — users can't touch others' carts
-- **Always change `JWT_SECRET`** in production to a long random string
-
----
-
-## 📦 Product Categories
-
-`clothing` · `electronics` · `accessories` · `footwear` · `home` · `sports`
-
----
-
-## 🛒 Checkout Flow
-
-1. User must be logged in (redirects to `/pages/login.html` if not)
-2. **Step 1 — Shipping:** Fill name, address, city, ZIP, country
-3. **Step 2 — Payment:** Simulated demo payment (no real payment gateway)
-4. Order is created in MongoDB, cart is cleared, success screen shown
-
----
-
-## 🎨 Brand Colors
-
-| Token | Hex |
-|---|---|
-| Violet (primary) | `#7C3AED` |
-| Violet Dark | `#6D28D9` |
-| Orange (accent) | `#FF4D00` |
-| Dark | `#0A0A0B` |
-| Gray (bg) | `#F4F4F5` |
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Bootstrap 5.3, Bootstrap Icons, Vanilla JS (ES6+) |
+| Backend | Node.js 18+, Express 4 |
+| Database | MongoDB + Mongoose |
+| Auth | JWT (jsonwebtoken + bcryptjs) |
+| Hosting | Render (single Web Service) |
+| DB Hosting | MongoDB Atlas (M0 free tier) |

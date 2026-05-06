@@ -1,0 +1,30 @@
+# render.yaml — Render Blueprint
+# Docs: https://render.com/docs/blueprint-spec
+#
+# This deploys a single Web Service (Express) that:
+#  - Serves the Bootstrap/HTML frontend as static files
+#  - Exposes all /api/* routes
+#  - Connects to MongoDB Atlas via the MONGO_URI env var
+
+services:
+  - type: web
+    name: shopvibe
+    runtime: node
+    region: oregon          # change to: frankfurt | singapore | ohio
+    plan: free              # free tier — fine for demos
+    rootDir: backend        # package.json lives in /backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000         # Render always routes to this port internally
+      - key: MONGO_URI
+        sync: false          # Set this manually in the Render dashboard
+      - key: JWT_SECRET
+        generateValue: true  # Render auto-generates a secure random value
+      - key: JWT_EXPIRES_IN
+        value: 7d
