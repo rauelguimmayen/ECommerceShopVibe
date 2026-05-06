@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Orders – ShopVibe</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+<div id="navbar-placeholder"></div>
+
+<div class="admin-page">
+  <div class="container py-4">
+
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between gap-3 mb-5">
+      <div class="d-flex align-items-center gap-3">
+        <a href="/pages/admin/dashboard.html" class="btn btn-outline-secondary text-white border-white border-opacity-25">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+          <p class="text-violet small fw-semibold text-uppercase mb-0">Admin</p>
+          <h2 class="text-white fw-black mb-0">All Orders</h2>
+        </div>
+      </div>
+      <p class="text-white-50 small mb-0" id="order-count">Loading…</p>
+    </div>
+
+    <!-- Status Filter Chips -->
+    <div class="d-flex flex-wrap gap-2 mb-4" id="status-filter">
+      <button class="cat-chip active" data-status="all">All Orders</button>
+      <button class="cat-chip" data-status="processing">Processing</button>
+      <button class="cat-chip" data-status="shipped">Shipped</button>
+      <button class="cat-chip" data-status="delivered">Delivered</button>
+      <button class="cat-chip" data-status="cancelled">Cancelled</button>
+    </div>
+
+    <!-- Loading -->
+    <div id="orders-loading" class="text-center py-5">
+      <div class="spinner-border text-violet"></div>
+    </div>
+
+    <!-- Orders List -->
+    <div id="orders-list" class="d-none"></div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+  let allOrders = [];
+  let activeStatus = 'all';
+
+  const STATUS_CFG = {
+    processing: { label: 'Processing', cls: 'badge-processing', icon: 'bi-clock-fill' },
+    shipped:    { label: 'Shipped',    cls: 'badge-shipped',    icon: 'bi-truck' },
+    delivered:  { label: 'Delivered',  cls: 'badge-delivered',  icon: 'bi-check-circle-fill' },
+    cancelled:  { label: 'Cancelled',  cls: 'badge-cancelled',  icon: 'bi-x-circle-fill' }
+  };
+
+  fetch('../../components/navbar.html').then(r => r.text()).then(html => {
+    document.getElementById('navbar-placeholder').innerHTML = html;
+    renderNavUser(); cart.load();
+    window.addEventListener('scroll', () => {
+      document.getElementById('main-navbar')?.classList.toggle('scrolled', window.scrollY > 20);
+    });
+  });
+
+  async function loadOrders() {
+    const user = api.getUser();
+    if (!user || user.role !== 'admin') { window.location.href = '/index.html'; return; }
+
+    try {
+      allOrders = await api.orders.all();
+      document.getElementById('orders-loading').classList.add('d-none');
+      renderOrders();
+    } catch (e) {
+      document.getElementById('orders-loading').innerHTML =
+        `<p class="text-danger">${e.message}</p>`;
+    }
+  }
+
+  function renderOrders() {
+    const list = activeStatus === 'all'
+      ? allOrders
+      : allOrders.filter(o => o.status === activeStatus);
+
+    // Update chip counts
+    document.querySelectorAll('#status-filter .cat-chip').forEach(chip => {
+      const s = chip.dataset.status;
+      const count = s === 'all' ? allOrders.length : allOrders.filter(o => o.status === s).length;
+      chip.textContent = s === 'all' ? `All Orders (${count})` : `${STATUS_CFG[s]?.label} (${count})`;
+    });
+
+    document.getElementById('order-count').textContent = `${list.length} order${list.length !== 1 ? 's' : ''}`;
+
+    const container = document.getElementById('orders-list');
+    container.classList.remove('d-none');
+
+    if (list.length === 0) {
+      container.innerHTML = `<div class="text-center py-5 text-white-50">
+        <i class="bi bi-bag display-3 d-block mb-3"></i>
+        <p class="fs-5">No ${activeStatus === 'all' ? '' : activeStatus + ' '}orders found.</p>
+      </div>`;
+      return;
+    }
+
+    container.innerHTML = list.map((order, idx) => {
+      const s = STATUS_CFG[order.status] || STATUS_CFG.processing;
+      const date = order.createdAt
+        ? new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : '—';
+
+      return `
+        <div class="admin-card mb-4 overflow-hidden">
+          <!-- Order Header -->
+          <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center
+                      justify-content-between gap-3 p-4 border-bottom border-white border-opacity-10">
+            <div class="d-flex align-items-center gap-3">
+              <i class="bi ${s.icon} fs-5 ${s.cls.replace('badge-','text-')}"></i>
+              <div>
+                <p class="text-white fw-semibold mb-0">${order.user_name || order.user_email}</p>
+                <span class="font-monospace text-white-50 small">#${order._id?.slice(-8).toUpperCase()}</span>
+              </div>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-3">
+              <span class="badge ${s.cls} px-3 py-2 rounded-pill capitalize">${s.label}</span>
+              <p class="fw-black text-white fs-4 mb-0">$${order.total_amount?.toFixed(2)}</p>
+              <small class="text-white-50">${date}</small>
+
+              <!-- Status Updater -->
+              <select class="form-select form-select-sm bg-transparent text-white border-white border-opacity-25"
+                      style="width:auto;min-width:140px"
+                      onchange="updateStatus('${order._id}', this.value)">
+                <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>Processing</option>
+                <option value="shipped"    ${order.status === 'shipped'    ? 'selected' : ''}>Shipped</option>
+                <option value="delivered"  ${order.status === 'delivered'  ? 'selected' : ''}>Delivered</option>
+                <option value="cancelled"  ${order.status === 'cancelled'  ? 'selected' : ''}>Cancelled</option>
+              </select>
+
+              <!-- Toggle expand -->
+              <button class="btn btn-sm btn-outline-secondary text-white border-opacity-25"
+                      onclick="toggleExpand('expand-${idx}', this)">
+                <i class="bi bi-chevron-down"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Expandable Items -->
+          <div id="expand-${idx}" class="d-none p-4">
+            <div class="row g-3 mb-3">
+              ${(order.items || []).map(item => `
+                <div class="col-12">
+                  <div class="d-flex align-items-center gap-3">
+                    <img src="${item.product_image || 'https://via.placeholder.com/56'}"
+                         class="rounded-2" width="56" height="56" style="object-fit:cover">
+                    <div class="flex-grow-1">
+                      <p class="text-white fw-semibold mb-0">${item.product_name}</p>
+                      <small class="text-white-50">Qty: ${item.quantity}</small>
+                    </div>
+                    <span class="text-white fw-bold">$${(item.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                </div>`).join('')}
+            </div>
+            ${order.shipping_address ? `
+              <div class="border-top border-white border-opacity-10 pt-3">
+                <p class="text-white-50 small mb-1"><i class="bi bi-geo-alt me-1"></i>Shipping Address</p>
+                <p class="text-white small mb-0">
+                  ${order.shipping_address.full_name}, ${order.shipping_address.address},
+                  ${order.shipping_address.city}, ${order.shipping_address.zip}, ${order.shipping_address.country}
+                </p>
+              </div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function toggleExpand(id, btn) {
+    const el = document.getElementById(id);
+    const isHidden = el.classList.toggle('d-none');
+    btn.innerHTML = isHidden ? '<i class="bi bi-chevron-down"></i>' : '<i class="bi bi-chevron-up"></i>';
+  }
+
+  async function updateStatus(id, status) {
+    try {
+      await api.orders.updateStatus(id, status);
+      showToast(`Status updated to "${status}"`, 'success');
+      // Update locally
+      const order = allOrders.find(o => o._id === id);
+      if (order) order.status = status;
+      renderOrders();
+    } catch (e) { showToast(e.message, 'danger'); }
+  }
+
+  // Filter chips
+  document.getElementById('status-filter').addEventListener('click', e => {
+    const chip = e.target.closest('.cat-chip');
+    if (!chip) return;
+    activeStatus = chip.dataset.status;
+    document.querySelectorAll('#status-filter .cat-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    renderOrders();
+  });
+
+  loadOrders();
+</script>
+</body>
+</html>

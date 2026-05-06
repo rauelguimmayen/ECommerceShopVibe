@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up – ShopVibe</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="bg-sv-gray" style="min-height:100vh;display:flex;align-items:center">
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-sm-8 col-md-6 col-lg-5 col-xl-4">
+
+      <div class="text-center mb-4">
+        <a href="/index.html" class="text-decoration-none">
+          <div class="d-inline-flex align-items-center gap-2">
+            <div class="bg-violet rounded-2 d-flex align-items-center justify-content-center" style="width:40px;height:40px">
+              <i class="bi bi-lightning-fill text-white fs-5"></i>
+            </div>
+            <span class="fw-black fs-3 text-dark">Shop<span class="text-violet">Vibe</span></span>
+          </div>
+        </a>
+        <h5 class="mt-3 fw-bold">Create an account</h5>
+        <p class="text-muted small">Join thousands of shoppers</p>
+      </div>
+
+      <div class="card border-0 shadow-sm p-4" style="border-radius:20px">
+        <div id="error-alert" class="alert alert-danger d-none small"></div>
+
+        <form id="register-form">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Full Name</label>
+            <input type="text" id="full_name" class="form-control" placeholder="Jane Doe" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Email address</label>
+            <input type="email" id="email" class="form-control" placeholder="you@example.com" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold small">Password</label>
+            <div class="input-group">
+              <input type="password" id="password" class="form-control" placeholder="Min. 6 characters" minlength="6" required>
+              <button type="button" class="btn btn-outline-secondary" id="toggle-pw">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-sv w-100 py-3 fw-bold" id="reg-btn">
+            Create Account
+          </button>
+        </form>
+
+        <p class="text-center text-muted small mt-4 mb-0">
+          Already have an account?
+          <a href="/pages/login.html" class="text-violet fw-semibold text-decoration-none">Sign in</a>
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/api.js"></script>
+<script>
+  if (api.getToken()) window.location.href = '/index.html';
+
+  document.getElementById('toggle-pw').addEventListener('click', () => {
+    const pw = document.getElementById('password');
+    const icon = document.querySelector('#toggle-pw i');
+    if (pw.type === 'password') { pw.type = 'text'; icon.className = 'bi bi-eye-slash'; }
+    else { pw.type = 'password'; icon.className = 'bi bi-eye'; }
+  });
+
+  document.getElementById('register-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('reg-btn');
+    const errEl = document.getElementById('error-alert');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div> Creating account…';
+    errEl.classList.add('d-none');
+
+    try {
+      await api.auth.register(
+        document.getElementById('full_name').value,
+        document.getElementById('email').value,
+        document.getElementById('password').value
+      );
+      window.location.href = '/index.html';
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.remove('d-none');
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+    }
+  });
+</script>
+</body>
+</html>

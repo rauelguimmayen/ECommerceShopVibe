@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard – ShopVibe</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+<div id="navbar-placeholder"></div>
+
+<div class="admin-page">
+  <div class="container py-4">
+
+    <!-- Header -->
+    <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-4 mb-5">
+      <div>
+        <p class="text-violet fw-semibold text-uppercase small mb-1">Mission Control</p>
+        <h1 class="text-white fw-black mb-0" style="font-size:clamp(2rem,5vw,3.5rem)">Admin Dashboard</h1>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/pages/admin/products.html" class="btn btn-sv d-flex align-items-center gap-2">
+          <i class="bi bi-box-seam"></i> Products
+        </a>
+        <a href="/pages/admin/orders.html" class="btn btn-outline-secondary text-white border-white border-opacity-25 d-flex align-items-center gap-2">
+          <i class="bi bi-bag"></i> Orders
+        </a>
+      </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="row g-4 mb-5">
+      <div class="col-sm-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:linear-gradient(135deg,#7C3AED,#4F46E5)">
+            <i class="bi bi-box-seam text-white fs-5"></i>
+          </div>
+          <p class="fw-black text-white fs-1 mb-0" id="stat-products">—</p>
+          <p class="text-white-50 small mb-0">Total Products</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:linear-gradient(135deg,#FF4D00,#E04400)">
+            <i class="bi bi-bag text-white fs-5"></i>
+          </div>
+          <p class="fw-black text-white fs-1 mb-0" id="stat-orders">—</p>
+          <p class="text-white-50 small mb-0">Total Orders</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:linear-gradient(135deg,#22c55e,#16a34a)">
+            <i class="bi bi-currency-dollar text-white fs-5"></i>
+          </div>
+          <p class="fw-black text-white fs-1 mb-0" id="stat-revenue">—</p>
+          <p class="text-white-50 small mb-0">Total Revenue</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:linear-gradient(135deg,#3b82f6,#2563eb)">
+            <i class="bi bi-people text-white fs-5"></i>
+          </div>
+          <p class="fw-black text-white fs-1 mb-0" id="stat-active-products">—</p>
+          <p class="text-white-50 small mb-0">Active Products</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Orders Table -->
+    <div class="admin-card overflow-hidden">
+      <div class="d-flex align-items-center justify-content-between px-4 py-3 border-bottom border-white border-opacity-10">
+        <h5 class="text-white fw-bold mb-0">Recent Orders</h5>
+        <a href="/pages/admin/orders.html" class="text-violet small text-decoration-none">View all →</a>
+      </div>
+      <div id="recent-orders-table">
+        <div class="text-center py-5">
+          <div class="spinner-border text-violet"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+  fetch('../../components/navbar.html').then(r => r.text()).then(html => {
+    document.getElementById('navbar-placeholder').innerHTML = html;
+    renderNavUser(); cart.load();
+    window.addEventListener('scroll', () => {
+      document.getElementById('main-navbar')?.classList.toggle('scrolled', window.scrollY > 20);
+    });
+  });
+
+  const STATUS_COLORS = {
+    processing: 'badge-processing', shipped: 'badge-shipped',
+    delivered: 'badge-delivered', cancelled: 'badge-cancelled'
+  };
+
+  async function loadDashboard() {
+    const user = api.getUser();
+    if (!user) { window.location.href = '/pages/login.html'; return; }
+    if (user.role !== 'admin') { window.location.href = '/index.html'; return; }
+
+    try {
+      const [products, orders, statsData] = await Promise.all([
+        api.products.adminAll(),
+        api.orders.all(),
+        api.orders.stats()
+      ]);
+
+      // Stats
+      document.getElementById('stat-products').textContent = products.length;
+      document.getElementById('stat-orders').textContent = statsData.totalOrders || orders.length;
+      document.getElementById('stat-revenue').textContent = '$' + (statsData.totalRevenue || 0).toFixed(2);
+      document.getElementById('stat-active-products').textContent = products.filter(p => p.is_active).length;
+
+      // Recent orders
+      const recent = orders.slice(0, 8);
+      const tbody = recent.map(o => {
+        const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+        return `
+          <tr>
+            <td class="text-white fw-semibold">${o.user_name || o.user_email}</td>
+            <td class="font-monospace text-white-50 small">#${o._id?.slice(-8).toUpperCase()}</td>
+            <td><span class="badge ${STATUS_COLORS[o.status] || 'badge-processing'} px-3 py-2 rounded-pill text-capitalize">${o.status}</span></td>
+            <td class="text-white fw-bold">$${o.total_amount?.toFixed(2)}</td>
+            <td class="text-white-50 small">${date}</td>
+          </tr>`;
+      }).join('');
+
+      document.getElementById('recent-orders-table').innerHTML = recent.length === 0
+        ? `<p class="text-white-50 text-center py-5">No orders yet</p>`
+        : `<div class="table-responsive">
+            <table class="table table-borderless align-middle mb-0">
+              <thead><tr class="text-white-50 small border-bottom border-white border-opacity-10">
+                <th class="px-4">Customer</th><th>Order ID</th><th>Status</th><th>Amount</th><th>Date</th>
+              </tr></thead>
+              <tbody class="text-white">${tbody}</tbody>
+            </table>
+          </div>`;
+
+    } catch (e) {
+      showToast(e.message, 'danger');
+    }
+  }
+
+  loadDashboard();
+</script>
+</body>
+</html>
