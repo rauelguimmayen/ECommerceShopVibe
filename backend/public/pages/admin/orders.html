@@ -133,7 +133,7 @@
               <small class="text-white-50">${date}</small>
 
               <!-- Status Updater -->
-              <select class="form-select form-select-sm bg-transparent text-black border-white border-opacity-25"
+              <select class="form-select form-select-sm bg-transparent text-white border-white border-opacity-25"
                       style="width:auto;min-width:140px"
                       onchange="updateStatus('${order._id}', this.value)">
                 <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>Processing</option>
@@ -143,7 +143,7 @@
               </select>
 
               <!-- Toggle expand -->
-              <button class="btn btn-sm btn-outline-secondary text-white border-opacity-25"
+              <button class="btn btn-sm btn-outline-secondary text-black border-opacity-25"
                       onclick="toggleExpand('expand-${idx}', this)">
                 <i class="bi bi-chevron-down"></i>
               </button>
