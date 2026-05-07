@@ -133,7 +133,7 @@
               <small class="text-white-50">${date}</small>
 
               <!-- Status Updater -->
-              <select class="form-select form-select-sm bg-transparent text-white border-white border-opacity-25"
+              <select class="form-select form-select-sm bg-transparent text-black border-white border-opacity-25"
                       style="width:auto;min-width:140px"
                       onchange="updateStatus('${order._id}', this.value)">
                 <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>Processing</option>
