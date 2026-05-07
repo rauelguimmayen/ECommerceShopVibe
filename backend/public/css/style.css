@@ -175,9 +175,9 @@ body {
   box-shadow: 0 0 0 .2rem rgba(124,58,237,.15);
 }
 
-#statusUpdated option {
+#StatusUpdater option {
     color: black !important;
-    background-color: white; /* Ensures the background isn't transparent inside the menu */
+    background-color: white !important; /* Ensures the background isn't transparent inside the menu */
 }
 /* ── Misc ────────────────────────────────────────────────────────────────── */
 .cursor-pointer { cursor: pointer; }
