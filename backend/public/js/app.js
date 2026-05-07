@@ -153,7 +153,7 @@ function renderNavUser() {
 
   if (user) {
     const adminLink = user.role === 'admin'
-      ? `<li><a class="dropdown-item" href="/pages/admin/dashboard.html"><i class="bi bi-speedometer2 me-2"></i>Admin</a></li><li><hr class="dropdown-divider"></li>`
+      ? `<li><a class="dropdown-item" href="/pages/admin/dashboard.html"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li><li><hr class="dropdown-divider"></li>`
       : '';
     navUser.innerHTML = `
       <li class="nav-item dropdown">
