@@ -166,8 +166,7 @@ function renderNavUser() {
         </a>
         <ul class="dropdown-menu dropdown-menu-end shadow border-0">
           ${adminLink}
-          <li><a class="dropdown-item" href="/pages/orders.html"><i class="bi bi-bag me-2"></i>My Orders</a></li>
-          <li><hr class="dropdown-divider"></li>
+
           <li><a class="dropdown-item text-danger" href="#" onclick="api.auth.logout()"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
         </ul>
       </li>`;
