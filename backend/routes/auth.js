@@ -5,9 +5,12 @@ const crypto   = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const User     = require('../models/User');
 const { protect } = require('../middleware/auth');
+const { Resend }  = require('resend');
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
+const resend = new Resend(process.env.SMTP_PASS);
+
 
 // ── POST /api/auth/register ───────────────────────────────────────────────────
 router.post('/register', async (req, res) => {
@@ -89,7 +92,7 @@ router.post('/forgot-password', async (req, res) => {
     const resetURL = `${req.protocol}://${req.get('host')}/pages/reset-password.html?token=${rawToken}`;
 
     // Send email
-    const nodemailer = require('nodemailer');
+/*    const nodemailer = require('nodemailer');
     const transporter = nodemailer.createTransport({
       host:   process.env.SMTP_HOST,
       port:   Number(process.env.SMTP_PORT) || 587,
@@ -98,9 +101,11 @@ router.post('/forgot-password', async (req, res) => {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
       }
-    });
+    });*/
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
-    await transporter.sendMail({
+
+    await resend.emails.send({
       from:    `"ShopVibe" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
       to:      user.email,
       subject: 'Reset your ShopVibe password',
