@@ -153,7 +153,7 @@ function renderNavUser() {
 
   if (user) {
     const adminLink = user.role === 'admin'
-      ? `<li><a class="dropdown-item" href="/pages/admin/dashboard.html"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li><li><hr class="dropdown-divider"></li>`
+      ? `<li><a class="dropdown-item" href="/pages/admin/dashboard.html"><i class="bi bi-speedometer2 me-2"></i>Admin</a></li><li><hr class="dropdown-divider"></li>`
       : '';
     navUser.innerHTML = `
       <li class="nav-item dropdown">
@@ -167,6 +167,7 @@ function renderNavUser() {
         <ul class="dropdown-menu dropdown-menu-end shadow border-0">
           ${adminLink}
           <li><a class="dropdown-item" href="/pages/orders.html"><i class="bi bi-bag me-2"></i>My Orders</a></li>
+          <li><a class="dropdown-item" href="/pages/change-password.html"><i class="bi bi-key me-2"></i>Change Password</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item text-danger" href="#" onclick="api.auth.logout()"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
         </ul>
