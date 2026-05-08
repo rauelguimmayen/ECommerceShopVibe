@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
 
@@ -41,6 +42,46 @@ router.post('/login', async (req, res) => {
     res.json({ token, user });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// POST /api/auth/google  — verify Google ID token from frontend
+router.post('/google', async (req, res) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) return res.status(400).json({ message: 'Google credential required.' });
+
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture } = payload;
+
+    // Find or create user
+    let user = await User.findOne({ $or: [{ googleId }, { email }] });
+    if (user) {
+      // Link Google account if not already linked
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.avatar = user.avatar || picture;
+        await user.save();
+      }
+    } else {
+      user = await User.create({
+        full_name: name,
+        email,
+        googleId,
+        avatar: picture
+      });
+    }
+
+    const token = signToken(user._id);
+    res.json({ token, user });
+  } catch (err) {
+    console.error('Google auth error:', err.message);
+    res.status(401).json({ message: 'Google sign-in failed. Please try again.' });
   }
 });
 

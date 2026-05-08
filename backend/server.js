@@ -45,7 +45,9 @@ app.use('/api/cart',     cartRoutes);
 app.get('/api/health', (req, res) =>
   res.json({ status: 'ok', env: process.env.NODE_ENV, time: new Date() })
 );
-
+app.get('/js/config.js', (req, res) =>
+  res.type('js').send(`window.GOOGLE_CLIENT_ID="${process.env.GOOGLE_CLIENT_ID||''}";`)
+);
 // ─── Serve Static Frontend ────────────────────────────────────────────────────
 // Express serves the entire frontend from /public on the SAME origin.
 // This means no CORS issues and no separate frontend server needed.
