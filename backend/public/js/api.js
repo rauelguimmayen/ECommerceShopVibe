@@ -37,7 +37,19 @@ const api = {
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-    const data = await res.json();
+
+    // Safely parse — server may return HTML on unexpected errors
+    const contentType = res.headers.get('content-type') || '';
+    let data;
+    if (contentType.includes('application/json')) {
+      data = await res.json();
+    } else {
+      const text = await res.text();
+      // If it's not JSON and the request failed, surface a clean error
+      if (!res.ok) throw new Error(`Server error (${res.status}). Please try again.`);
+      return text;
+    }
+
     if (!res.ok) throw new Error(data.message || 'Request failed');
     return data;
   },
