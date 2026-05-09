@@ -5,7 +5,7 @@ const crypto   = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const User     = require('../models/User');
 const { protect } = require('../middleware/auth');
-
+const { emit } = require('../utils/webhookEmitter');
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
@@ -21,6 +21,10 @@ router.post('/register', async (req, res) => {
     if (existing) return res.status(409).json({ message: 'Email already in use.' });
 
     const user = await User.create({ full_name, email, password });
+
+    // Fire webhook (non-blocking)
+    emit('user.registered', { userId: user._id, email: user.email, method: 'email' }).catch(() => {});
+
     res.status(201).json({ token: signToken(user._id), user });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -62,6 +66,7 @@ router.post('/google', async (req, res) => {
       if (!user.googleId) { user.googleId = googleId; user.avatar = user.avatar || picture; await user.save(); }
     } else {
       user = await User.create({ full_name: name, email, googleId, avatar: picture });
+      emit('user.registered', { userId: user._id, email: user.email, method: 'google' }).catch(() => {});
     }
 
     res.json({ token: signToken(user._id), user });
@@ -90,12 +95,20 @@ router.post('/forgot-password', async (req, res) => {
     const resetURL = `${req.protocol}://${req.get('host')}/pages/reset-password.html?token=${rawToken}`;
 
     // Send email
-    const { Resend } = require('resend');
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      host:   process.env.SMTP_HOST,
+      port:   Number(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
 
-    await resend.emails.send({
-      from: 'ShopVibe <onboarding@resend.dev>',
-      to: user.email,
+    await transporter.sendMail({
+      from:    `"ShopVibe" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+      to:      user.email,
       subject: 'Reset your ShopVibe password',
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
@@ -111,7 +124,8 @@ router.post('/forgot-password', async (req, res) => {
               Reset Password
             </a>
             <p style="color:#adb5bd;font-size:12px;margin:24px 0 0">
-              If you didn't request this, you can safely ignore this email.
+              If you didn't request this, you can safely ignore this email.<br>
+              Link expires at ${user.resetPasswordExpires.toUTCString()}
             </p>
           </div>
         </div>
@@ -152,6 +166,9 @@ router.post('/reset-password', async (req, res) => {
     user.resetPasswordToken   = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
+
+    // Fire webhook (non-blocking)
+    emit('user.password_reset', { userId: user._id, email: user.email }).catch(() => {});
 
     res.json({ message: 'Password updated successfully.' });
   } catch (err) {
