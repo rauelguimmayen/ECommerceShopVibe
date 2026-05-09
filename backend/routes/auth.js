@@ -95,20 +95,12 @@ router.post('/forgot-password', async (req, res) => {
     const resetURL = `${req.protocol}://${req.get('host')}/pages/reset-password.html?token=${rawToken}`;
 
     // Send email
-    const nodemailer = require('nodemailer');
-    const transporter = nodemailer.createTransport({
-      host:   process.env.SMTP_HOST,
-      port:   Number(process.env.SMTP_PORT) || 587,
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
+    const { Resend } = require('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
-    await transporter.sendMail({
-      from:    `"ShopVibe" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
-      to:      user.email,
+    await resend.emails.send({
+      from: 'ShopVibe <onboarding@resend.dev>',
+      to: user.email,
       subject: 'Reset your ShopVibe password',
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
@@ -124,8 +116,7 @@ router.post('/forgot-password', async (req, res) => {
               Reset Password
             </a>
             <p style="color:#adb5bd;font-size:12px;margin:24px 0 0">
-              If you didn't request this, you can safely ignore this email.<br>
-              Link expires at ${user.resetPasswordExpires.toUTCString()}
+              If you didn't request this, you can safely ignore this email.
             </p>
           </div>
         </div>
