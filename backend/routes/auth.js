@@ -5,7 +5,6 @@ const crypto   = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const User     = require('../models/User');
 const { protect } = require('../middleware/auth');
-const { emit } = require('../utils/webhookEmitter');
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
@@ -21,10 +20,6 @@ router.post('/register', async (req, res) => {
     if (existing) return res.status(409).json({ message: 'Email already in use.' });
 
     const user = await User.create({ full_name, email, password });
-
-    // Fire webhook (non-blocking)
-    emit('user.registered', { userId: user._id, email: user.email, method: 'email' }).catch(() => {});
-
     res.status(201).json({ token: signToken(user._id), user });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -66,7 +61,6 @@ router.post('/google', async (req, res) => {
       if (!user.googleId) { user.googleId = googleId; user.avatar = user.avatar || picture; await user.save(); }
     } else {
       user = await User.create({ full_name: name, email, googleId, avatar: picture });
-      emit('user.registered', { userId: user._id, email: user.email, method: 'google' }).catch(() => {});
     }
 
     res.json({ token: signToken(user._id), user });
@@ -157,9 +151,6 @@ router.post('/reset-password', async (req, res) => {
     user.resetPasswordToken   = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
-
-    // Fire webhook (non-blocking)
-    emit('user.password_reset', { userId: user._id, email: user.email }).catch(() => {});
 
     res.json({ message: 'Password updated successfully.' });
   } catch (err) {

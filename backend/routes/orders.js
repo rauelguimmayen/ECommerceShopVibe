@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
 const { protect, adminOnly } = require('../middleware/auth');
-const { emit } = require('../utils/webhookEmitter');
 
 // GET /api/orders/my  — current user's orders
 router.get('/my', protect, async (req, res) => {
@@ -39,10 +38,6 @@ router.post('/', protect, async (req, res) => {
       shipping_address,
       payment_method: payment_method || 'simulated'
     });
-
-    // Fire webhook (non-blocking)
-    emit('order.created', { order }).catch(() => {});
-
     res.status(201).json(order);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -59,10 +54,6 @@ router.put('/:id/status', protect, adminOnly, async (req, res) => {
       { new: true, runValidators: true }
     );
     if (!order) return res.status(404).json({ message: 'Order not found.' });
-
-    // Fire webhook (non-blocking)
-    emit('order.status_updated', { orderId: order._id, status: order.status, order }).catch(() => {});
-
     res.json(order);
   } catch (err) {
     res.status(400).json({ message: err.message });

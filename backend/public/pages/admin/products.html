@@ -131,7 +131,6 @@
 <script src="/js/app.js"></script>
 <script>
   let editingId = null;
-  let productsMap = {}; // id → product object, avoids JSON-in-onclick quoting bugs
 
   fetch('/components/navbar.html').then(r => r.text()).then(html => {
     document.getElementById('navbar-placeholder').innerHTML = html;
@@ -149,10 +148,6 @@
       const products = await api.products.adminAll();
       document.getElementById('products-loading').classList.add('d-none');
       document.getElementById('products-table').classList.remove('d-none');
-
-      // Store in map so openEdit can safely look up by id
-      productsMap = {};
-      products.forEach(p => productsMap[p._id] = p);
 
       document.getElementById('products-tbody').innerHTML = products.map(p => `
         <tr class="border-bottom border-white border-opacity-10">
@@ -179,7 +174,7 @@
           </td>
           <td class="text-end pe-4">
             <div class="d-flex gap-2 justify-content-end">
-              <button class="btn btn-sm btn-outline-secondary border-opacity-25" onclick="openEdit('${p._id}')">
+              <button class="btn btn-sm btn-outline-secondary border-opacity-25" onclick='openEdit(${JSON.stringify(p)})'>
                 <i class="bi bi-pencil"></i>
               </button>
               <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p._id}','${p.name}')">
@@ -202,9 +197,7 @@
     document.getElementById('modal-error').classList.add('d-none');
   }
 
-  function openEdit(id) {
-    const p = productsMap[id];
-    if (!p) { showToast('Product not found — please refresh.', 'danger'); return; }
+  function openEdit(p) {
     editingId = p._id;
     document.getElementById('modal-title').textContent = 'Edit Product';
     document.getElementById('pf-name').value = p.name;
