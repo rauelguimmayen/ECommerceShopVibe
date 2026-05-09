@@ -5,11 +5,12 @@ const morgan  = require('morgan');
 const mongoose = require('mongoose');
 const path    = require('path');
 
-const authRoutes     = require('./routes/auth');
-const productRoutes  = require('./routes/products');
-const orderRoutes    = require('./routes/orders');
-const cartRoutes     = require('./routes/cart');
-const webhookRoutes  = require('./routes/webhooks');
+const authRoutes          = require('./routes/auth');
+const productRoutes       = require('./routes/products');
+const orderRoutes         = require('./routes/orders');
+const cartRoutes          = require('./routes/cart');
+const webhookRoutes       = require('./routes/webhooks');
+const resendWebhookRoutes = require('./routes/resendWebhook');
 
 const app = express();
 
@@ -33,15 +34,18 @@ app.use(cors({
 }));
 
 // ─── General Middleware ───────────────────────────────────────────────────────
+// Resend webhook — must be mounted BEFORE express.json() so it can read the raw body
+app.use('/api/resend-webhook', resendWebhookRoutes);
+
 app.use(express.json());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
-app.use('/api/auth',     authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/orders',   orderRoutes);
-app.use('/api/cart',     cartRoutes);
-app.use('/api/webhooks', webhookRoutes);
+app.use('/api/auth',           authRoutes);
+app.use('/api/products',       productRoutes);
+app.use('/api/orders',         orderRoutes);
+app.use('/api/cart',           cartRoutes);
+app.use('/api/webhooks',       webhookRoutes);
 
 // Health check (useful for Render's health-check setting)
 app.get('/api/health', (req, res) =>
