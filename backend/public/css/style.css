@@ -173,9 +173,11 @@ body {
 .form-control:focus, .form-select:focus {
   border-color: var(--sv-violet);
   box-shadow: 0 0 0 .2rem rgba(124,58,237,.15);
-  color: black;
 }
-
+#statusupdate option{
+  color: black;
+  background-color: white;
+}
 /* ── Misc ────────────────────────────────────────────────────────────────── */
 .cursor-pointer { cursor: pointer; }
 .rounded-xl { border-radius: 12px !important; }
