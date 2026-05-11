@@ -4,19 +4,10 @@ const Order = require('../models/Order');
 const { protect, adminOnly } = require('../middleware/auth');
 const User = require('../models/User');
 // GET /api/orders/my  — current user's orders
-/*router.get('/my', protect, async (req, res) => {
-  try {
-    const orders = await Order.find({ user: req.user._id }).sort('-createdAt').limit(50);
-    res.json(orders);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});*/
-
 router.get('/my', protect, async (req, res) => {
   try {
     if (req.user.role === 'admin') {
-      return res.status(403).json({ message: 'Log in with a none-admin account' });
+      return res.status(403).json({ message: 'Log in with a non-admin account' });
     }
 
     const orders = await Order.find({ user: req.user._id }).sort('-createdAt').limit(50);

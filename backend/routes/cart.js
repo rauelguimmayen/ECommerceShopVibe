@@ -9,7 +9,9 @@ router.use(protect);
 
 // GET /api/cart
 router.get('/', async (req, res) => {
-  try {
+  try { if (req.user.role === 'admin') {
+      return res.status(403).json({ message: 'Log in with a non-admin account' });
+    }
     const items = await CartItem.find({ user: req.user._id });
     res.json(items);
   } catch (err) {
@@ -20,6 +22,9 @@ router.get('/', async (req, res) => {
 // POST /api/cart  — add or increment
 router.post('/', async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({ message: 'Log in with a non-admin account' });
+    }
     const { product_id, quantity = 1 } = req.body;
 
     const product = await Product.findById(product_id);
@@ -50,6 +55,9 @@ router.post('/', async (req, res) => {
 // PUT /api/cart/:id  — update quantity
 router.put('/:id', async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({ message: 'Log in with a non-admin account' });
+    }
     const { quantity } = req.body;
     if (quantity <= 0) {
       await CartItem.findOneAndDelete({ _id: req.params.id, user: req.user._id });
@@ -70,6 +78,9 @@ router.put('/:id', async (req, res) => {
 // DELETE /api/cart/:id  — remove item
 router.delete('/:id', async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({ message: 'Log in with a non-admin account' });
+    }
     await CartItem.findOneAndDelete({ _id: req.params.id, user: req.user._id });
     res.json({ message: 'Item removed.' });
   } catch (err) {
@@ -80,6 +91,9 @@ router.delete('/:id', async (req, res) => {
 // DELETE /api/cart  — clear entire cart
 router.delete('/', async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({ message: 'Log in with a non-admin account' });
+    }
     await CartItem.deleteMany({ user: req.user._id });
     res.json({ message: 'Cart cleared.' });
   } catch (err) {
