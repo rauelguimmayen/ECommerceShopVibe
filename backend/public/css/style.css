@@ -173,6 +173,7 @@ body {
 .form-control:focus, .form-select:focus {
   border-color: var(--sv-violet);
   box-shadow: 0 0 0 .2rem rgba(124,58,237,.15);
+  color: black;
 }
 
 /* ── Misc ────────────────────────────────────────────────────────────────── */
